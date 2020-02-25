@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.4/css/tether.min.css"></script>
+    <script
+      src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+      integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- Firebase -->
+
+    <script src="https://www.gstatic.com/firebasejs/7.9.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/6.2.4/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/6.2.4/firebase-auth.js"></script>
+    <!-- firebaseUI -->
+    <script src="https://cdn.firebase.com/libs/firebaseui/4.0.0/firebaseui.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.1.0/firebase-database.js"></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo</title>
+  </head>
+  <body>
+    <nav class="bg-dark text-center text-white p-4">
+      <h1 id="nav"><span id="navUserName">Piyush's</span> Todo App</h1>
+    </nav>
+    <div class="container mt-4">
+      <div id="todos">
+        <div class="row">
+          <div class="col-md-12 col-sm-12 col-lg-4">
+            <form id="addTodoForm">
+              <div class="form-group">
+                <label for="todoInput">Enter Todo</label>
+                <input
+                  required
+                  type="text"
+                  id="todoInput"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-group">
+                <button type="submit" class="btn btn-danger form-control">
+                  Add
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="col-md-12 col-sm-12 col-lg-8">
+            <h1 class="bg-info text-white text-center p-3">My Todos</h1>
+            <ul id="myTodoList" class="list-group"></ul>
+          </div>
+        </div>
+      </div>
+      <button
+        id="logoutBtn"
+        onclick="logout()"
+        class="btn btn-outline-danger text-center mt-5"
+      >
+        Logout
+      </button>
+      <button
+        id="loginBtn"
+        onclick="signInWithGoogle()"
+        class="btn btn-sucess btn-lg"
+      >
+        Login
+      </button>
+    </div>
+
+    <script src="index.js"></script>
+    <script>
+      // Your web app's Firebase configuration
+      var firebaseConfig = {
+        apiKey: "AIzaSyCaali3I2PfdHHo9KRn1yLCwOQyp2HE4mM",
+        authDomain: "todo-demo-392db.firebaseapp.com",
+        databaseURL: "https://todo-demo-392db.firebaseio.com",
+        projectId: "todo-demo-392db",
+        storageBucket: "todo-demo-392db.appspot.com",
+        messagingSenderId: "619074392212",
+        appId: "1:619074392212:web:654bc884ce50c7f4ca2481"
+      };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+
+      //   Check Auth
+      firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+          let db = firebase.database();
+          document.getElementById("nav").style.display = "block";
+          document.getElementById("loginBtn").style.display = "none";
+          document.getElementById("logoutBtn").style.display = "block";
+          document.getElementById("todos").style.display = "block";
+
+          document.getElementById("navUserName").innerText =
+            user.displayName.split(" ")[0] + " 's";
+
+          const addTodoForm = document.getElementById("addTodoForm");
+
+          // Handler
+          function handelEvent(e) {
+            e.preventDefault();
+            let todoItem = document.getElementById("todoInput").value;
+
+            const liTag = document.createElement("li");
+            liTag.classList.add("list-group-item");
+            liTag.appendChild(document.createTextNode(todoItem));
+
+            document.getElementById("myTodoList").appendChild(liTag);
+
+            document.getElementById("todoInput").value = "";
+            // Firebase
+
+            db.ref("/" + user.uid + `/${Date.now()}`).set({
+              item: todoItem
+            });
+          }
+
+          // Event listner
+          addTodoForm.addEventListener("submit", handelEvent);
+
+          db.ref("/" + user.uid)
+            .once("value")
+            .then(snapshot => {
+              snapshot.forEach(snap => {
+                console.log(snap.val().item);
+                const liTag = document.createElement("li");
+                liTag.classList.add("list-group-item");
+                liTag.appendChild(document.createTextNode(snap.val().item));
+                document.getElementById("myTodoList").appendChild(liTag);
+              });
+            })
+            .catch(er => console.og(er));
+        } else {
+          document.getElementById("loginBtn").style.display = "block";
+          document.getElementById("logoutBtn").style.display = "none";
+          document.getElementById("todos").style.display = "none";
+          document.getElementById("nav").style.display = "none";
+        }
+      });
+
+      //   Auth
+
+      function logout() {
+        firebase.auth().signOut();
+      }
+
+      function signInWithGoogle() {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        firebase
+          .auth()
+          .signInWithPopup(provider)
+          .then(result => {})
+          .catch(err => console.log(err));
+      }
+    </script>
+  </body>
+</html>
